@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Insight Builder</title>
+<style>
+#viz-app{
+  --ink:#1F1446; --ink-2:#3A4150; --muted:#6B7280; --faint:#9AA0A6;
+  --line:#E6E8EC; --line-2:#EEF0F4; --surface:#FFFFFF; --bg:#F6F7F9;
+  --accent:#009CDE; --accent-ink:#0072A3; --accent-bg:#E6F4FB;
+  --dim-bg:#EEF0F4; --dim-ink:#3A4150;
+  --danger:#C2453E; --ok:#12A594; --warn:#E08735;
+  --r:10px; --r-sm:7px;
+  font-family:Arial, "Helvetica Neue", Helvetica, system-ui, sans-serif;
+  color:var(--ink); background:var(--bg);
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  font-size:13px; line-height:1.45; -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+}
+#viz-app *{ box-sizing:border-box; }
+#viz-app button{ font-family:inherit; font-size:inherit; cursor:pointer; }
+#viz-app :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:4px; }
+
+#viz-app .viz-top{ display:flex; align-items:center; gap:20px; padding:0 18px; height:52px; background:var(--surface); border-bottom:1px solid var(--line); flex:0 0 auto; }
+#viz-app .viz-brand{ display:flex; align-items:center; gap:9px; font-weight:700; letter-spacing:-0.01em; font-size:15px; }
+#viz-app .viz-logo{ display:inline-grid; place-items:center; width:24px; height:24px; border-radius:6px; background:var(--ink); color:#fff; font-size:13px; }
+#viz-app .viz-brand small{ font-weight:400; color:var(--faint); font-size:11px; margin-left:1px; }
+#viz-app .viz-tabs{ display:flex; gap:2px; margin-left:6px; }
+#viz-app .viz-tab{ border:0; background:transparent; color:var(--muted); padding:7px 12px; border-radius:var(--r-sm); font-weight:600; }
+#viz-app .viz-tab[aria-selected="true"]{ background:var(--accent-bg); color:var(--accent-ink); }
+#viz-app .viz-mode{ margin-left:auto; display:flex; align-items:center; gap:7px; color:var(--muted); font-size:11.5px; }
+#viz-app .viz-dot{ width:8px; height:8px; border-radius:50%; background:var(--faint); }
+#viz-app .viz-dot.live{ background:var(--ok); }
+#viz-app .viz-dot.demo{ background:var(--warn); }
+
+#viz-app .viz-controls{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:10px 18px; background:var(--surface); border-bottom:1px solid var(--line); flex:0 0 auto; }
+#viz-app .ctrl{ display:flex; align-items:center; gap:7px; }
+#viz-app .ctrl > label{ color:var(--muted); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+#viz-app .seg{ display:inline-flex; background:var(--line-2); border-radius:var(--r-sm); padding:2px; }
+#viz-app .seg button{ border:0; background:transparent; color:var(--ink-2); padding:5px 10px; border-radius:5px; font-weight:600; }
+#viz-app .seg button[aria-pressed="true"]{ background:var(--surface); color:var(--ink); box-shadow:0 1px 2px rgba(16,20,40,.08); }
+#viz-app input[type="date"], #viz-app .pick-btn, #viz-app select{ font-family:inherit; font-size:12.5px; color:var(--ink); border:1px solid var(--line); background:var(--surface); border-radius:var(--r-sm); padding:6px 9px; }
+#viz-app .pick-btn{ display:inline-flex; align-items:center; gap:7px; min-width:130px; justify-content:space-between; }
+#viz-app .pick-btn .chev{ color:var(--faint); }
+#viz-app .custom-dates{ display:none; gap:7px; align-items:center; }
+#viz-app .custom-dates.on{ display:flex; }
+
+#viz-app .viz-body{ flex:1 1 auto; display:flex; min-height:0; }
+#viz-app .viz-catalog{ flex:0 0 268px; background:var(--surface); border-right:1px solid var(--line); display:flex; flex-direction:column; min-height:0; }
+#viz-app .cat-head{ padding:13px 14px 9px; }
+#viz-app .cat-head h2{ margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+#viz-app .cat-search{ width:100%; border:1px solid var(--line); border-radius:var(--r-sm); padding:7px 10px; font-size:12.5px; font-family:inherit; }
+#viz-app .cat-scroll{ overflow:auto; padding:4px 8px 16px; }
+#viz-app .cat-group{ margin-top:10px; }
+#viz-app .cat-group h3{ margin:0 0 5px; padding:0 6px; font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); }
+#viz-app .chip{ display:flex; align-items:center; gap:9px; width:100%; text-align:left; border:1px solid var(--line); background:var(--surface); border-radius:var(--r-sm); padding:8px 10px; margin:3px 0; color:var(--ink); transition:border-color .12s, background .12s, transform .05s; }
+#viz-app .chip:hover{ border-color:var(--accent); background:#FAFDFF; }
+#viz-app .chip:active{ transform:translateY(1px); }
+#viz-app .chip[aria-disabled="true"]{ opacity:.42; pointer-events:none; }
+#viz-app .chip .nm{ flex:1 1 auto; font-weight:600; }
+#viz-app .chip .un{ color:var(--faint); font-size:11px; }
+#viz-app .mk{ flex:0 0 auto; width:11px; height:11px; }
+#viz-app .mk.measure{ background:var(--accent); border-radius:2px; }
+#viz-app .mk.dimension{ border:2px solid #6E56CF; border-radius:50%; background:transparent; }
+
+#viz-app .viz-main{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; }
+#viz-app .scroll-main{ overflow:auto; padding:18px; flex:1 1 auto; min-height:0; }
+
+#viz-app .strip{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:12px 14px; display:flex; gap:24px; align-items:flex-start; margin-bottom:14px; }
+#viz-app .zone{ flex:1 1 0; min-width:0; }
+#viz-app .zone > .zlab{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-bottom:7px; display:flex; gap:7px; align-items:center; }
+#viz-app .zone .zlab .mk{ width:10px; height:10px; }
+#viz-app .dropzone{ min-height:42px; border:1.5px dashed var(--line); border-radius:var(--r-sm); padding:7px; display:flex; flex-wrap:wrap; gap:7px; align-content:flex-start; transition:border-color .12s, background .12s; }
+#viz-app .dropzone.hot{ border-color:var(--accent); background:var(--accent-bg); }
+#viz-app .dropzone .ph{ color:var(--faint); font-size:12px; padding:4px 3px; align-self:center; }
+#viz-app .tok{ display:inline-flex; align-items:center; gap:8px; border-radius:20px; padding:5px 6px 5px 11px; font-weight:600; font-size:12.5px; animation:pop .16s ease-out; }
+#viz-app .tok.measure{ background:var(--accent-bg); color:var(--accent-ink); }
+#viz-app .tok.dimension{ background:var(--dim-bg); color:var(--dim-ink); }
+#viz-app .tok .x{ border:0; background:rgba(0,0,0,.06); color:inherit; width:18px; height:18px; border-radius:50%; display:grid; place-items:center; font-size:13px; line-height:1; }
+#viz-app .tok .x:hover{ background:rgba(0,0,0,.14); }
+@keyframes pop{ from{ transform:scale(.85); opacity:0; } to{ transform:scale(1); opacity:1; } }
+
+#viz-app .chartcard{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r); overflow:hidden; }
+#viz-app .chartbar{ display:flex; align-items:center; gap:12px; padding:11px 14px; border-bottom:1px solid var(--line-2); }
+#viz-app .chart-title{ font-weight:700; font-size:15px; letter-spacing:-0.01em; color:var(--ink); border:1px solid transparent; border-radius:6px; padding:3px 7px; margin:-3px -7px; min-width:120px; max-width:60%; background:transparent; font-family:inherit; }
+#viz-app .chart-title:hover{ border-color:var(--line); }
+#viz-app .chart-title:focus{ border-color:var(--accent); background:#fff; }
+#viz-app .chartbar .spacer{ flex:1 1 auto; }
+#viz-app .chartbar label.ov{ color:var(--muted); font-size:11.5px; font-weight:600; }
+#viz-app .btn{ border:1px solid var(--line); background:var(--surface); color:var(--ink); font-weight:600; border-radius:var(--r-sm); padding:7px 12px; }
+#viz-app .btn:hover{ border-color:var(--accent); color:var(--accent-ink); }
+#viz-app .btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+#viz-app .btn.primary:hover{ background:#008ECB; color:#fff; }
+#viz-app .btn.ghost{ border-color:transparent; color:var(--muted); }
+#viz-app .btn.danger{ color:var(--danger); border-color:#ECC7C5; }
+#viz-app .btn:disabled{ opacity:.45; pointer-events:none; }
+
+#viz-app .chart-host{ padding:14px 16px 18px; position:relative; min-height:300px; }
+#viz-app .legend{ display:flex; flex-wrap:wrap; gap:14px 18px; padding:0 2px 12px; }
+#viz-app .legend .it{ display:flex; align-items:center; gap:7px; font-size:12px; color:var(--ink-2); }
+#viz-app .legend .sw{ width:12px; height:12px; border-radius:3px; }
+
+#viz-app .kpis{ display:flex; flex-wrap:wrap; gap:14px; }
+#viz-app .kpi{ flex:1 1 180px; border:1px solid var(--line); border-radius:var(--r); padding:16px 18px; background:#FCFDFE; }
+#viz-app .kpi .kl{ color:var(--muted); font-size:12px; font-weight:600; }
+#viz-app .kpi .kv{ font-size:30px; font-weight:800; letter-spacing:-0.02em; margin-top:6px; }
+#viz-app .kpi .ku{ font-size:13px; font-weight:600; color:var(--faint); margin-left:5px; }
+
+#viz-app .empty{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; min-height:300px; text-align:center; color:var(--muted); }
+#viz-app .empty .big{ font-size:16px; font-weight:700; color:var(--ink-2); }
+#viz-app .empty .ic{ font-size:34px; opacity:.5; }
+#viz-app .empty.err .big{ color:var(--danger); }
+
+#viz-app table.dtable{ width:100%; border-collapse:collapse; font-size:12.5px; }
+#viz-app table.dtable th, #viz-app table.dtable td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--line-2); }
+#viz-app table.dtable th{ color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+#viz-app table.dtable td.n, #viz-app table.dtable th.n{ text-align:right; font-variant-numeric:tabular-nums; }
+
+#viz-app .progress{ position:absolute; left:0; right:0; top:0; height:2px; background:var(--line-2); overflow:hidden; display:none; }
+#viz-app .progress.on{ display:block; }
+#viz-app .progress i{ position:absolute; left:0; top:0; bottom:0; width:30%; background:var(--accent); animation:slide 1.1s infinite ease-in-out; }
+@keyframes slide{ 0%{ left:-30%; } 100%{ left:100%; } }
+
+#viz-app .dash-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+#viz-app .dash-tile{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r); overflow:hidden; }
+#viz-app .dash-tile .th{ display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--line-2); }
+#viz-app .dash-tile .th .tt{ font-weight:700; flex:1 1 auto; }
+#viz-app .dash-tile .body{ padding:10px 12px; }
+#viz-app .dash-empty{ grid-column:1/-1; }
+#viz-app .dash-toolbar{ display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+#viz-app .dash-toolbar .spacer{ flex:1 1 auto; }
+
+#viz-app .menu-wrap{ position:relative; }
+#viz-app .menu{ position:absolute; right:0; top:calc(100% + 6px); background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:0 10px 30px rgba(16,20,40,.14); min-width:240px; padding:6px; z-index:40; display:none; }
+#viz-app .menu.on{ display:block; }
+#viz-app .menu .row{ display:flex; align-items:center; gap:8px; padding:8px 9px; border-radius:var(--r-sm); }
+#viz-app .menu .row:hover{ background:var(--line-2); }
+#viz-app .menu .row .nm{ flex:1 1 auto; font-weight:600; }
+#viz-app .menu .empty-m{ padding:12px 10px; color:var(--faint); font-size:12px; text-align:center; }
+#viz-app .menu .seph{ height:1px; background:var(--line-2); margin:5px 4px; }
+#viz-app .menu .saverow{ display:flex; gap:6px; padding:6px; }
+#viz-app .menu .saverow input{ flex:1 1 auto; border:1px solid var(--line); border-radius:var(--r-sm); padding:7px 9px; font-family:inherit; font-size:12.5px; }
+
+#viz-app .popover{ position:absolute; background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:0 12px 32px rgba(16,20,40,.16); padding:8px; z-index:50; width:260px; display:none; }
+#viz-app .popover.on{ display:block; }
+#viz-app .popover .psearch{ width:100%; border:1px solid var(--line); border-radius:var(--r-sm); padding:7px 9px; font-family:inherit; font-size:12.5px; margin-bottom:6px; }
+#viz-app .popover .plist{ max-height:240px; overflow:auto; }
+#viz-app .popover .opt{ display:flex; align-items:center; gap:9px; padding:7px 8px; border-radius:var(--r-sm); cursor:pointer; }
+#viz-app .popover .opt:hover{ background:var(--line-2); }
+#viz-app .popover .opt input{ width:15px; height:15px; }
+#viz-app .popover .pfoot{ display:flex; justify-content:space-between; padding:7px 4px 2px; }
+#viz-app .popover .pfoot button{ border:0; background:transparent; color:var(--accent-ink); font-weight:700; font-size:12px; }
+
+#viz-app .viz-status{ flex:0 0 auto; background:var(--surface); border-top:1px solid var(--line); }
+#viz-app .status-bar{ display:flex; align-items:center; gap:12px; padding:7px 16px; font-size:11.5px; color:var(--muted); }
+#viz-app .status-bar .stat{ display:flex; gap:6px; align-items:center; }
+#viz-app .status-bar .stat b{ color:var(--ink-2); font-weight:700; }
+#viz-app .status-bar .spacer{ flex:1 1 auto; }
+#viz-app .status-bar .toglog{ border:0; background:transparent; color:var(--accent-ink); font-weight:700; }
+#viz-app .logpanel{ display:none; max-height:160px; overflow:auto; border-top:1px solid var(--line-2); padding:8px 16px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px; color:var(--ink-2); }
+#viz-app .logpanel.on{ display:block; }
+#viz-app .logpanel .ln{ padding:1px 0; }
+#viz-app .logpanel .ln.err{ color:var(--danger); }
+#viz-app .logpanel .ln.ok{ color:var(--ok); }
+#viz-app .logpanel .ln .t{ color:var(--faint); }
+
+#viz-app .viz-tip{ position:fixed; pointer-events:none; background:var(--ink); color:#fff; padding:6px 9px; border-radius:6px; font-size:11.5px; z-index:80; opacity:0; transition:opacity .08s; white-space:nowrap; max-width:260px; }
+#viz-app .viz-tip.on{ opacity:1; }
+#viz-app .viz-tip .tk{ color:#B9C0E8; }
+
+#viz-app .viz-toast{ position:fixed; bottom:18px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; padding:10px 16px; border-radius:10px; font-size:12.5px; font-weight:600; z-index:90; opacity:0; transition:opacity .18s, transform .18s; pointer-events:none; box-shadow:0 10px 30px rgba(16,20,40,.25); }
+#viz-app .viz-toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+#viz-app svg.chart text{ fill:var(--ink-2); }
+#viz-app svg.chart .grid line{ stroke:var(--line-2); }
+#viz-app svg.chart .axlab{ fill:var(--faint); }
+#viz-app svg.chart .bar:hover, #viz-app svg.chart .dot:hover, #viz-app svg.chart .pt:hover{ opacity:.78; }
+
+#viz-app .cat-toggle{ display:none; }
+@media (max-width:880px){
+  #viz-app .viz-catalog{ position:absolute; z-index:30; height:100%; box-shadow:6px 0 20px rgba(16,20,40,.08); transform:translateX(-100%); transition:transform .2s; }
+  #viz-app .viz-catalog.open{ transform:none; }
+  #viz-app .strip{ flex-direction:column; gap:12px; }
+  #viz-app .dash-grid{ grid-template-columns:1fr; }
+  #viz-app .cat-toggle{ display:inline-flex; }
+}
+@media (prefers-reduced-motion:reduce){ #viz-app *{ animation:none !important; transition:none !important; } }
+</style>
+</head>
+<body>
+<div id="viz-app">
+  <header class="viz-top">
+    <button class="btn ghost cat-toggle" id="catToggle" aria-label="Toggle data points">&#9776;</button>
+    <div class="viz-brand"><span class="viz-logo">&#9703;</span> Insight Builder <small>by Lytx</small></div>
+    <nav class="viz-tabs" role="tablist">
+      <button class="viz-tab" id="tabBuild" role="tab" aria-selected="true">Build</button>
+      <button class="viz-tab" id="tabDash" role="tab" aria-selected="false">Dashboard</button>
+    </nav>
+    <div class="viz-mode" id="vizMode"><span class="viz-dot"></span> Starting&#8230;</div>
+  </header>
+
+  <div class="viz-controls" id="vizControls">
+    <div class="ctrl">
+      <label>Range</label>
+      <div class="seg" id="rangeSeg" role="group" aria-label="Date range">
+        <button data-days="7">7d</button>
+        <button data-days="30" aria-pressed="true">30d</button>
+        <button data-days="90">90d</button>
+        <button data-days="custom">Custom</button>
+      </div>
+      <div class="custom-dates" id="customDates">
+        <input type="date" id="dFrom" aria-label="From date">
+        <span style="color:var(--faint)">&#8594;</span>
+        <input type="date" id="dTo" aria-label="To date">
+      </div>
+    </div>
+    <div class="ctrl">
+      <label>Groups</label>
+      <button class="pick-btn" id="groupPick" aria-haspopup="true"><span class="lab">All groups</span><span class="chev">&#9662;</span></button>
+    </div>
+    <div class="ctrl">
+      <label>Vehicles</label>
+      <button class="pick-btn" id="vehPick" aria-haspopup="true"><span class="lab">All vehicles</span><span class="chev">&#9662;</span></button>
+    </div>
+    <div class="ctrl">
+      <label>Units</label>
+      <div class="seg" id="unitSeg" role="group" aria-label="Units">
+        <button data-unit="metric" aria-pressed="true">Metric</button>
+        <button data-unit="imperial">Imperial</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="viz-body">
+    <aside class="viz-catalog" id="vizCatalog">
+      <div class="cat-head">
+        <h2>Data points</h2>
+        <input class="cat-search" id="catSearch" placeholder="Search measures and slices&#8230;" aria-label="Search data points">
+      </div>
+      <div class="cat-scroll" id="catScroll"></div>
+    </aside>
+
+    <main class="viz-main">
+      <div class="scroll-main">
+        <section id="vizBuildView">
+          <div class="strip">
+            <div class="zone">
+              <div class="zlab"><span class="mk measure"></span> Measures &#8212; what to count or total</div>
+              <div class="dropzone" id="zMeasures" data-kind="measure"><span class="ph">Drag measures here, or click one on the left.</span></div>
+            </div>
+            <div class="zone">
+              <div class="zlab"><span class="mk dimension"></span> Slice by &#8212; how to break it down</div>
+              <div class="dropzone" id="zDims" data-kind="dimension"><span class="ph">Optional. Add up to two.</span></div>
+            </div>
+          </div>
+
+          <div class="chartcard">
+            <div class="chartbar">
+              <input class="chart-title" id="chartTitle" value="Untitled chart" aria-label="Chart title">
+              <div class="spacer"></div>
+              <label class="ov" for="chartType">Chart</label>
+              <select id="chartType" aria-label="Chart type"><option value="auto">Auto</option></select>
+              <button class="btn primary" id="addTile" disabled>Add to dashboard</button>
+            </div>
+            <div class="chart-host" id="chartHost">
+              <div class="empty"><div class="ic">&#9703;</div><div class="big">Build a chart</div><div>Add a measure to begin. Add more &#8212; or a slice &#8212; and the chart picks itself.</div></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="vizDashView" hidden>
+          <div class="dash-toolbar">
+            <strong id="dashName" style="font-size:15px;">Untitled dashboard</strong>
+            <span class="sub" style="color:var(--faint);font-size:12px;" id="dashCount"></span>
+            <div class="spacer"></div>
+            <div class="menu-wrap">
+              <button class="btn" id="savedBtn" aria-haspopup="true">Saved &#9662;</button>
+              <div class="menu" id="savedMenu"></div>
+            </div>
+            <button class="btn danger" id="clearDash">Clear</button>
+          </div>
+          <div class="dash-grid" id="dashGrid"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="viz-status">
+    <div class="status-bar">
+      <div class="stat" id="stRows"><b>&#8212;</b> rows loaded</div>
+      <div class="stat" id="stScope"><b>&#8212;</b> vehicles in scope</div>
+      <div class="stat" id="stRules"><b>&#8212;</b> safety rules matched</div>
+      <div class="spacer"></div>
+      <button class="toglog" id="logToggle">Data log &#9662;</button>
+    </div>
+    <div class="logpanel" id="logPanel"></div>
+  </div>
+
+  <div class="viz-tip" id="vizTip"></div>
+  <div class="viz-toast" id="vizToast"></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
