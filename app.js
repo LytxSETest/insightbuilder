@@ -581,10 +581,74 @@
     return out;
   }
 
+  // ---- discovery probe (temporary: run once to inventory the live database) ----
+  function injectDiscoverButton(){
+    var bar=document.querySelector("#viz-app .status-bar"); if(!bar||document.getElementById("discoverBtn")) return;
+    var b=ce("button","toglog"); b.id="discoverBtn"; b.textContent="Discover data points"; b.style.marginRight="10px";
+    b.onclick=function(){ runDiscovery(b); };
+    bar.insertBefore(b, $("logToggle"));
+  }
+  function runDiscovery(btn){
+    if(!S.live){ toast("Discovery needs a live MyGeotab connection."); return; }
+    btn.disabled=true; var label=btn.textContent; btn.textContent="Discovering\u2026";
+    var now=new Date(); var dayAgo=new Date(now.getTime()-24*3600*1000); var weekAgo=new Date(now.getTime()-7*24*3600*1000);
+    var ids=scopeDeviceIds(); var sampleDevs=ids.slice(0,8);
+    var report={ generatedAt:now.toISOString(), scope:{ vehiclesInScope:ids.length, sampledVehicles:sampleDevs.length }, probes:{} };
+    function isoBack(days){ return new Date(now.getTime()-days*24*3600*1000).toISOString(); }
+    function probe(name, promise, shaper){ return promise.then(function(rows){ report.probes[name]={ ok:true, count:(rows&&rows.length)||0, sample:(shaper?shaper(rows):(rows||[]).slice(0,2)) }; }).catch(function(e){ report.probes[name]={ ok:false, error:errMsg(e) }; }); }
+    function sample1(typeName, key, days){ var s={ fromDate:isoBack(days||30), toDate:now.toISOString() }; if(sampleDevs[0]) s.deviceSearch={id:sampleDevs[0]}; return probe(key||typeName, gcall("Get",{ typeName:typeName, search:s, resultsLimit:2 })); }
+    var tasks=[];
+
+    if(sampleDevs.length){
+      var sdCalls=sampleDevs.map(function(id){ return ["Get",{ typeName:"StatusData", search:{ fromDate:dayAgo.toISOString(), toDate:now.toISOString(), deviceSearch:{id:id} }, resultsLimit:2000 }]; });
+      tasks.push( gmulti(sdCalls).then(function(res){
+        var rows=[]; res.forEach(function(a){ if(a&&a.length) rows=rows.concat(a); });
+        var byDiag={}; rows.forEach(function(r){ var d=r.diagnostic&&r.diagnostic.id; if(!d) return; if(!byDiag[d]) byDiag[d]={ id:d, count:0, sampleValue:r.data, sampleAt:r.dateTime }; byDiag[d].count++; });
+        var list=Object.keys(byDiag).map(function(k){ return byDiag[k]; });
+        report.probes.statusData={ ok:true, rowsSampled:rows.length, distinctDiagnostics:list.length, diagnostics:list };
+        var dCalls=list.slice(0,150).map(function(d){ return ["Get",{ typeName:"Diagnostic", search:{ id:d.id } }]; });
+        return gmulti(dCalls).then(function(dres){ var info={}; dres.forEach(function(a){ if(a&&a[0]){ var d=a[0]; info[d.id]={ name:d.name, unitId:(d.unitOfMeasure&&d.unitOfMeasure.id)||null, type:d.diagnosticType||null }; } }); list.forEach(function(dg){ var i=info[dg.id]; if(i){ dg.name=i.name; dg.unitId=i.unitId; dg.type=i.type; } }); }).catch(function(e){ report.probes.statusData.nameResolveError=errMsg(e); });
+      }).catch(function(e){ report.probes.statusData={ ok:false, error:errMsg(e) }; }) );
+
+      var fdCalls=sampleDevs.map(function(id){ return ["Get",{ typeName:"FaultData", search:{ fromDate:weekAgo.toISOString(), toDate:now.toISOString(), deviceSearch:{id:id} }, resultsLimit:500 }]; });
+      tasks.push( gmulti(fdCalls).then(function(res){ var rows=[]; res.forEach(function(a){ if(a&&a.length) rows=rows.concat(a); }); report.probes.faultData={ ok:true, rowsSampled:rows.length, sample:rows.slice(0,3) }; }).catch(function(e){ report.probes.faultData={ ok:false, error:errMsg(e) }; }) );
+    } else {
+      report.probes.statusData={ ok:false, error:"no vehicles in scope" }; report.probes.faultData={ ok:false, error:"no vehicles in scope" };
+    }
+
+    tasks.push( probe("unitsOfMeasure", gcall("Get",{ typeName:"UnitOfMeasure", resultsLimit:500 }), function(rows){ return (rows||[]).map(function(u){ return { id:u.id, name:u.name }; }); }) );
+    tasks.push( sample1("Trip","trip",30) );
+    tasks.push( sample1("ExceptionEvent","exceptionEvent",30) );
+    tasks.push( sample1("LogRecord","logRecord_gps",2) );
+    tasks.push( sample1("DVIRLog","dvir",90) );
+    tasks.push( sample1("DutyStatusLog","hos",14) );
+    tasks.push( probe("zones", gcall("Get",{ typeName:"Zone", resultsLimit:3 })) );
+    tasks.push( sample1("FuelUsed","fuelUsed",30) );
+    tasks.push( sample1("FuelTaxDetail","ifta",30) );
+    tasks.push( sample1("FuelTransaction","fuelTransaction",60) );
+    tasks.push( sample1("ChargeEvent","ev_chargeEvent",90) );
+
+    Promise.all(tasks).then(function(){ finishDiscovery(btn,label,report); }).catch(function(){ finishDiscovery(btn,label,report); });
+  }
+  function finishDiscovery(btn,label,report){ btn.disabled=false; btn.textContent=label; log("discovery complete \u2014 copy the inventory and paste it back to Claude","ok"); showJsonModal(report); }
+  function showJsonModal(obj){
+    var ov=ce("div"); ov.style.cssText="position:fixed;inset:0;background:rgba(16,20,40,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;";
+    var box=ce("div"); box.style.cssText="background:#fff;border-radius:12px;max-width:860px;width:100%;max-height:84vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(16,20,40,.4);";
+    var head=ce("div"); head.style.cssText="padding:14px 18px;border-bottom:1px solid #E6E8EC;display:flex;align-items:center;gap:12px;";
+    var h=ce("div",null,"Data-point inventory"); h.style.cssText="font-weight:700;font-size:15px;flex:1 1 auto;color:#1F1446;";
+    var copy=ce("button","btn primary","Copy"); var close=ce("button","btn","Close"); head.appendChild(h); head.appendChild(copy); head.appendChild(close); box.appendChild(head);
+    var sub=ce("div",null,"Copy this and paste it back in the chat. It is the catalog of data points your fleet reports, plus one or two sample rows per type so the field names are exact \u2014 scrub anything you would rather not share."); sub.style.cssText="padding:9px 18px 0;color:#6B7280;font-size:12px;line-height:1.5;"; box.appendChild(sub);
+    var ta=document.createElement("textarea"); ta.value=JSON.stringify(obj,null,2); ta.readOnly=true; ta.style.cssText="flex:1 1 auto;margin:12px 18px 18px;min-height:320px;border:1px solid #E6E8EC;border-radius:8px;padding:12px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;resize:none;white-space:pre;overflow:auto;color:#1F1446;"; box.appendChild(ta);
+    copy.onclick=function(){ ta.focus(); ta.select(); var done=false; try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(ta.value); done=true; } }catch(e){} if(!done){ try{ document.execCommand("copy"); }catch(e2){} } copy.textContent="Copied"; setTimeout(function(){ copy.textContent="Copy"; },1500); };
+    close.onclick=function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); };
+    ov.addEventListener("click",function(e){ if(e.target===ov && ov.parentNode) ov.parentNode.removeChild(ov); });
+    ov.appendChild(box); document.getElementById("viz-app").appendChild(ov);
+  }
+
   // ---- boot -------------------------------------------------------------
   function boot(api,live){
     S.api=api; S.live=live;
-    renderStrip(); wireDropzones(); wireControls(); renderCatalog(); updateTabs();
+    renderStrip(); wireDropzones(); wireControls(); renderCatalog(); updateTabs(); injectDiscoverButton();
     setMode(live?"live":"demo", live?"Connecting\u2026":"Demo data");
     loadMetadata().then(function(){ S.ready=true; recompute(); });
   }
