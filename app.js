@@ -28,7 +28,42 @@
     { id:"trips",         label:"Trips", cat:"Utilization", source:"trip", agg:"count", unit:"trips", vtype:"int" },
     { id:"avg_speed",     label:"Average speed", cat:"Utilization", source:"trip", agg:"avg", field:"averageSpeed", unit:"km/h", vtype:"speed" },
     { id:"top_speed",     label:"Top speed", cat:"Utilization", source:"trip", agg:"max", field:"maximumSpeed", unit:"km/h", vtype:"speed" },
-    { id:"idle_pct",      label:"Idle %", cat:"Utilization", source:"trip", agg:"derived", unit:"%", vtype:"pct", components:["idlingDuration","drivingDuration"] }
+    { id:"idle_pct",      label:"Idle %", cat:"Utilization", source:"trip", agg:"derived", unit:"%", vtype:"pct", components:["idlingDuration","drivingDuration"] },
+
+    { id:"eng_rpm_avg",  label:"Engine RPM (avg)", cat:"Engine", source:"status", diag:"DiagnosticEngineSpeedId", agg:"avg", unit:"rpm", vtype:"rpm" },
+    { id:"eng_rpm_peak", label:"Engine RPM (peak)", cat:"Engine", source:"status", diag:"DiagnosticEngineSpeedId", agg:"max", unit:"rpm", vtype:"rpm" },
+    { id:"eng_coolant",  label:"Coolant temp (avg)", cat:"Engine", source:"status", diag:"DiagnosticEngineCoolantTemperatureId", agg:"avg", unit:"\u00B0C", vtype:"tempC" },
+    { id:"eng_roadspeed_peak", label:"Engine road speed (peak)", cat:"Engine", source:"status", diag:"DiagnosticEngineRoadSpeedId", agg:"max", unit:"km/h", vtype:"speedKph" },
+    { id:"eng_hours",    label:"Engine hours (latest)", cat:"Engine", source:"status", diag:"DiagnosticEngineHoursId", agg:"last", unit:"h", vtype:"hoursSec" },
+    { id:"odometer",     label:"Odometer (latest)", cat:"Engine", source:"status", diag:"DiagnosticOdometerId", agg:"last", unit:"km", vtype:"distM" },
+    { id:"odo_distance", label:"Distance driven (odometer)", cat:"Engine", source:"status", diag:"DiagnosticOdometerId", agg:"delta", unit:"km", vtype:"distM" },
+
+    { id:"fuel_level",   label:"Fuel level (avg %)", cat:"Fuel & efficiency", source:"status", diag:"DiagnosticFuelLevelId", agg:"avg", unit:"%", vtype:"pct" },
+    { id:"fuel_tank",    label:"Fuel in tank (avg)", cat:"Fuel & efficiency", source:"status", diag:"DiagnosticFuelUnitsId", agg:"avg", unit:"L", vtype:"volumeL" },
+    { id:"fuel_used",    label:"Fuel used (period)", cat:"Fuel & efficiency", source:"status", diag:"DiagnosticTotalFuelUsedId", agg:"delta", unit:"L", vtype:"volumeL" },
+    { id:"idle_fuel",    label:"Idle fuel used (period)", cat:"Fuel & efficiency", source:"status", diag:"DiagnosticDeviceTotalIdleFuelId", agg:"delta", unit:"L", vtype:"volumeL" },
+
+    { id:"crank_v_min",  label:"Cranking voltage (lowest)", cat:"Battery & electrical", source:"status", diag:"DiagnosticCrankingVoltageId", agg:"min", unit:"V", vtype:"volts" },
+    { id:"crank_v_avg",  label:"Cranking voltage (avg)", cat:"Battery & electrical", source:"status", diag:"DiagnosticCrankingVoltageId", agg:"avg", unit:"V", vtype:"volts" },
+    { id:"dev_v_min",    label:"Device voltage (lowest)", cat:"Battery & electrical", source:"status", diag:"DiagnosticGoDeviceVoltageId", agg:"min", unit:"V", vtype:"volts" },
+
+    { id:"tire_fl",      label:"Tire pressure FL (avg)", cat:"Tires", source:"status", diag:"DiagnosticTirePressureFrontLeftId", agg:"avg", unit:"kPa", vtype:"pressurePa" },
+    { id:"tire_fr",      label:"Tire pressure FR (avg)", cat:"Tires", source:"status", diag:"DiagnosticTirePressureFrontRightId", agg:"avg", unit:"kPa", vtype:"pressurePa" },
+    { id:"tire_rl",      label:"Tire pressure RL (avg)", cat:"Tires", source:"status", diag:"DiagnosticTirePressureRearLeftId", agg:"avg", unit:"kPa", vtype:"pressurePa" },
+    { id:"tire_rr",      label:"Tire pressure RR (avg)", cat:"Tires", source:"status", diag:"DiagnosticTirePressureRearRightId", agg:"avg", unit:"kPa", vtype:"pressurePa" },
+
+    { id:"outside_temp", label:"Outside temp (avg)", cat:"Environment", source:"status", diag:"DiagnosticOutsideTemperatureId", agg:"avg", unit:"\u00B0C", vtype:"tempC" },
+
+    { id:"brake_g",      label:"Hardest braking (g)", cat:"Motion", source:"status", diag:"DiagnosticAccelerationForwardBrakingId", agg:"min", unit:"g", vtype:"gforce" },
+    { id:"corner_g",     label:"Hardest cornering (g)", cat:"Motion", source:"status", diag:"DiagnosticAccelerationSideToSideId", agg:"max", unit:"g", vtype:"gforce" },
+
+    { id:"breakdown_risk", label:"Predicted breakdown risk (peak)", cat:"Predictive", source:"status", diag:"DiagnosticPredictedRiskOfBreakdownId", agg:"max", unit:"%", vtype:"pct" },
+    { id:"elec_rating",  label:"Electrical system rating (latest)", cat:"Predictive", source:"status", diag:"DiagnosticElectricalSystemRatingId", agg:"last", unit:"", vtype:"num" },
+
+    { id:"faults_all",   label:"Faults logged", cat:"Faults", source:"fault", agg:"count", unit:"faults", vtype:"int" },
+    { id:"faults_mil",   label:"Check-engine (MIL) faults", cat:"Faults", source:"fault", agg:"count", unit:"faults", vtype:"int", lamp:"malfunctionLamp" },
+    { id:"faults_battery", label:"Low-battery faults", cat:"Faults", source:"fault", agg:"count", unit:"faults", vtype:"int", faultDiag:"DiagnosticVehicleBatteryLowVoltageId" },
+    { id:"faults_accident", label:"Accident-level accel events", cat:"Faults", source:"fault", agg:"count", unit:"faults", vtype:"int", faultDiag:"DiagnosticAccidentLevelAccelerationEventId" }
   ];
   var DIMENSIONS = [
     { id:"vehicle", label:"Vehicle", dkey:"vehicle", time:false, card:"high" },
@@ -40,6 +75,7 @@
   var MBYID = {}; MEASURES.forEach(function(m){ MBYID[m.id]=m; });
   var DBYID = {}; DIMENSIONS.forEach(function(d){ DBYID[d.id]=d; });
   var SOURCES = { exception:{ typeName:"ExceptionEvent", dateField:"activeFrom" }, trip:{ typeName:"Trip", dateField:"start" } };
+  function dateFieldFor(src){ if(src.indexOf("status:")===0) return "dateTime"; if(src==="fault") return "dateTime"; return (SOURCES[src]||{}).dateField || "dateTime"; }
 
   var S = {
     api:null, live:false, ready:false,
@@ -49,7 +85,8 @@
     title:"Untitled chart", titleEdited:false,
     meta:{ devices:[], deviceById:{}, groups:[], groupById:{}, driverById:{}, rules:[], matchedRuleIds:{} },
     cache:{}, lastResult:null, lastChartFn:null,
-    tiles:[], dashName:"Untitled dashboard", savedList:[], tab:"build"
+    tiles:[], dashName:"Untitled dashboard", savedList:[], tab:"build",
+    dynLoaded:false, showAllDiag:false
   };
 
   function $(id){ return document.getElementById(id); }
@@ -64,14 +101,43 @@
 
   var KM2MI=0.621371;
   function fmtNum(n,dp){ if(n==null||isNaN(n)) return "0"; return Number(n).toLocaleString(undefined,{minimumFractionDigits:dp||0,maximumFractionDigits:dp||0}); }
-  function convVal(vtype,v){ if(S.units==="imperial"){ if(vtype==="dist"||vtype==="speed") return v*KM2MI; } return v; }
-  function unitLabel(m){ if(S.units==="imperial"){ if(m.vtype==="dist") return "mi"; if(m.vtype==="speed") return "mph"; } return m.unit; }
+  function convVal(vtype,v){
+    var imp=S.units==="imperial";
+    if(vtype==="dist"||vtype==="speed"||vtype==="speedKph") return imp? v*KM2MI : v;
+    if(vtype==="distM") return imp? (v/1000)*KM2MI : v/1000;
+    if(vtype==="tempC") return imp? v*9/5+32 : v;
+    if(vtype==="pressurePa") return imp? v*0.000145038 : v/1000;
+    if(vtype==="volumeL") return imp? v*0.264172 : v;
+    if(vtype==="hoursSec") return v/3600;
+    if(vtype==="gforce") return v/9.81;
+    return v;
+  }
+  function unitLabel(m){
+    var imp=S.units==="imperial", t=m.vtype;
+    if(t==="dist"||t==="distM") return imp?"mi":"km";
+    if(t==="speed"||t==="speedKph") return imp?"mph":"km/h";
+    if(t==="tempC") return imp?"\u00B0F":"\u00B0C";
+    if(t==="pressurePa") return imp?"psi":"kPa";
+    if(t==="volumeL") return imp?"gal":"L";
+    if(t==="hoursSec") return "h";
+    if(t==="gforce") return "g";
+    if(t==="volts") return "V";
+    if(t==="rpm") return "rpm";
+    return m.unit;
+  }
   function fmtMeasure(m,v,longForm){
     v=convVal(m.vtype,v);
     if(m.vtype==="int") return fmtNum(v,0);
     if(m.vtype==="pct") return fmtNum(v,1);
-    if(m.vtype==="dist") return fmtNum(v, v>=100?0:1);
-    if(m.vtype==="speed") return fmtNum(v,1);
+    if(m.vtype==="dist"||m.vtype==="distM") return fmtNum(v, v>=100?0:1);
+    if(m.vtype==="speed"||m.vtype==="speedKph") return fmtNum(v,1);
+    if(m.vtype==="tempC") return fmtNum(v,1);
+    if(m.vtype==="pressurePa") return fmtNum(v, v>=100?0:1);
+    if(m.vtype==="volumeL") return fmtNum(v, v>=100?0:1);
+    if(m.vtype==="volts") return fmtNum(v,2);
+    if(m.vtype==="rpm") return fmtNum(v,0);
+    if(m.vtype==="gforce") return fmtNum(v,2);
+    if(m.vtype==="hoursSec") return fmtNum(v, v>=100?0:1);
     if(m.vtype==="dur"){ if(longForm){ var h=Math.floor(v); var mi=Math.round((v-h)*60); return h+"h "+(mi<10?"0":"")+mi+"m"; } return fmtNum(v, v>=100?0:1); }
     return fmtNum(v,1);
   }
@@ -117,8 +183,9 @@
     if(S.cache[key]) return Promise.resolve(S.cache[key]);
     if(!S.live){ var rows=mockRows(source,r,ids); S.cache[key]=rows; log("demo: "+rows.length+" "+source+" rows for "+ids.length+" vehicles","ok"); return Promise.resolve(rows); }
     if(!ids.length) return Promise.resolve([]);
-    var tn=SOURCES[source].typeName;
-    var calls=ids.map(function(id){ return ["Get",{ typeName:tn, search:{ deviceSearch:{id:id}, fromDate:r.fromIso, toDate:r.toIso }, resultsLimit:50000 }]; });
+    var diag=null, src=source; if(source.indexOf("status:")===0){ src="status"; diag=source.slice(7); }
+    var tn = src==="status"?"StatusData" : src==="fault"?"FaultData" : SOURCES[src].typeName;
+    var calls=ids.map(function(id){ var search={ deviceSearch:{id:id}, fromDate:r.fromIso, toDate:r.toIso }; if(diag) search.diagnosticSearch={id:diag}; return ["Get",{ typeName:tn, search:search, resultsLimit:50000 }]; });
     return runChunked(calls).then(function(rows){ S.cache[key]=rows; log(tn+": loaded "+rows.length+" rows across "+ids.length+" vehicles","ok"); return rows; });
   }
   function runChunked(calls){
@@ -142,29 +209,43 @@
     return [{k:"_all",label:"All"}];
   }
   function measureRows(m,rowsBySource){
+    if(m.source==="status") return rowsBySource["status:"+m.diag]||[];
     var rows=rowsBySource[m.source]||[];
-    if(m.source==="exception" && !m.matchAll){ var ids=S.meta.matchedRuleIds[m.id]||{}; rows=rows.filter(function(r){ return r.rule && ids[r.rule.id]; }); }
+    if(m.source==="exception"){ if(m.ruleId){ rows=rows.filter(function(r){ return r.rule && r.rule.id===m.ruleId; }); } else if(!m.matchAll){ var ids=S.meta.matchedRuleIds[m.id]||{}; rows=rows.filter(function(r){ return r.rule && ids[r.rule.id]; }); } }
+    if(m.source==="fault"){ if(m.faultDiag) rows=rows.filter(function(r){ return r.diagnostic && r.diagnostic.id===m.faultDiag; }); else if(m.lamp) rows=rows.filter(function(r){ return r[m.lamp]===true; }); }
     return rows;
   }
-  function valOf(m,r){ if(m.durField) return durHours(r[m.field]); var v=r[m.field]; return (v==null||isNaN(v))?0:+v; }
+  function valOf(m,r){ if(m.source==="status"){ var d=r.data; return (d==null||isNaN(d))?0:+d; } if(m.durField) return durHours(r[m.field]); var v=r[m.field]; return (v==null||isNaN(v))?0:+v; }
   function finalize(m,a){
     if(m.agg==="count") return a.cnt;
     if(m.agg==="sum") return a.sum;
     if(m.agg==="avg") return a.cnt? a.sum/a.cnt : 0;
     if(m.agg==="max") return a.max===-Infinity?0:a.max;
+    if(m.agg==="min") return a.min===Infinity?0:a.min;
+    if(m.agg==="last") return a.lVal||0;
+    if(m.agg==="delta") return Math.max(0,(a.lVal||0)-(a.fVal||0));
     if(m.agg==="derived"){ var den=a.c1+a.c2; return den? (a.c1/den)*100 : 0; }
     return 0;
   }
   function aggregateOne(m,rows,keyFn){
+    if(m.agg==="delta"||m.agg==="last"){
+      var accn={};
+      rows.forEach(function(r){ var dev=(r.device&&r.device.id)||"_"; var t=r.__date?r.__date.getTime():0; var v=valOf(m,r); var keys=keyFn(r);
+        for(var j=0;j<keys.length;j++){ var dk=keys[j].k; var g=accn[dk]||(accn[dk]={}); var d=g[dev]||(g[dev]={fAt:null,fVal:0,lAt:null,lVal:0}); if(d.fAt===null||t<d.fAt){ d.fAt=t; d.fVal=v; } if(d.lAt===null||t>=d.lAt){ d.lAt=t; d.lVal=v; } }
+      });
+      var outn={}; Object.keys(accn).forEach(function(dk){ var devs=accn[dk], s=0, c=0; Object.keys(devs).forEach(function(dv){ var d=devs[dv]; if(m.agg==="delta") s+=Math.max(0,d.lVal-d.fVal); else { s+=d.lVal; c++; } }); outn[dk]= m.agg==="delta"? s : (c? s/c : 0); }); return outn;
+    }
     var acc={};
-    function bump(k){ if(!acc[k]) acc[k]={sum:0,cnt:0,max:-Infinity,c1:0,c2:0}; return acc[k]; }
-    rows.forEach(function(r){ var keys=keyFn(r); for(var j=0;j<keys.length;j++){ var a=bump(keys[j].k);
-      if(m.agg==="count"){ a.cnt+=1; }
-      else if(m.agg==="sum"){ a.sum+=valOf(m,r); }
-      else if(m.agg==="avg"){ a.sum+=valOf(m,r); a.cnt+=1; }
-      else if(m.agg==="max"){ var v=valOf(m,r); if(v>a.max) a.max=v; }
-      else if(m.agg==="derived"){ a.c1+=durHours(r[m.components[0]]); a.c2+=durHours(r[m.components[1]]); }
-    } });
+    function bump(k){ if(!acc[k]) acc[k]={sum:0,cnt:0,max:-Infinity,min:Infinity,c1:0,c2:0}; return acc[k]; }
+    rows.forEach(function(r){ var keys=keyFn(r); var v=(m.agg==="count")?1:valOf(m,r);
+      for(var j=0;j<keys.length;j++){ var a=bump(keys[j].k);
+        if(m.agg==="count"){ a.cnt+=1; }
+        else if(m.agg==="sum"){ a.sum+=v; }
+        else if(m.agg==="avg"){ a.sum+=v; a.cnt+=1; }
+        else if(m.agg==="max"){ if(v>a.max) a.max=v; }
+        else if(m.agg==="min"){ if(v<a.min) a.min=v; }
+        else if(m.agg==="derived"){ a.c1+=durHours(r[m.components[0]]); a.c2+=durHours(r[m.components[1]]); }
+      } });
     var out={}; Object.keys(acc).forEach(function(k){ out[k]=finalize(m,acc[k]); }); return out;
   }
 
@@ -172,7 +253,7 @@
     var dims=S.dims.map(function(id){ return DBYID[id]; });
     var measures=S.measures.map(function(id){ return MBYID[id]; });
     var r=rangeISO();
-    for(var src in rowsBySource){ var df=SOURCES[src].dateField; rowsBySource[src].forEach(function(row){ if(!row.__date) row.__date=new Date(row[df]); }); }
+    for(var src in rowsBySource){ var df=dateFieldFor(src); rowsBySource[src].forEach(function(row){ if(!row.__date) row.__date=new Date(row[df]); }); }
 
     var res={ dims:dims, measures:measures };
     if(dims.length===0){
@@ -195,9 +276,13 @@
     var grid={}, ak={}, bk={}, alab={}, blab={};
     rows0.forEach(function(row){ var ka=dimKeyOf(dims[0],row), kb=dimKeyOf(dims[1],row);
       ka.forEach(function(pa){ kb.forEach(function(pb){ ak[pa.k]=1; bk[pb.k]=1; if(pa.label) alab[pa.k]=pa.label; if(pb.label) blab[pb.k]=pb.label;
-        var key=pa.k+"||"+pb.k; if(!grid[key]) grid[key]={sum:0,cnt:0,max:-Infinity,c1:0,c2:0}; var a=grid[key];
-        if(m0.agg==="count") a.cnt+=1; else if(m0.agg==="sum") a.sum+=valOf(m0,row); else if(m0.agg==="avg"){ a.sum+=valOf(m0,row); a.cnt+=1; }
-        else if(m0.agg==="max"){ var v=valOf(m0,row); if(v>a.max)a.max=v; } else if(m0.agg==="derived"){ a.c1+=durHours(row[m0.components[0]]); a.c2+=durHours(row[m0.components[1]]); }
+        var key=pa.k+"||"+pb.k; if(!grid[key]) grid[key]={sum:0,cnt:0,max:-Infinity,min:Infinity,c1:0,c2:0,fAt:null,fVal:0,lAt:null,lVal:0}; var a=grid[key];
+        var v=(m0.agg==="count")?1:valOf(m0,row); var tt=row.__date?row.__date.getTime():0;
+        if(m0.agg==="count") a.cnt+=1; else if(m0.agg==="sum") a.sum+=v; else if(m0.agg==="avg"){ a.sum+=v; a.cnt+=1; }
+        else if(m0.agg==="max"){ if(v>a.max)a.max=v; } else if(m0.agg==="min"){ if(v<a.min)a.min=v; }
+        else if(m0.agg==="last"){ if(a.lAt===null||tt>=a.lAt){ a.lAt=tt; a.lVal=v; } }
+        else if(m0.agg==="delta"){ if(a.fAt===null||tt<a.fAt){ a.fAt=tt; a.fVal=v; } if(a.lAt===null||tt>=a.lAt){ a.lAt=tt; a.lVal=v; } }
+        else if(m0.agg==="derived"){ a.c1+=durHours(row[m0.components[0]]); a.c2+=durHours(row[m0.components[1]]); }
       }); });
     });
     function tot(k){ var s=0; Object.keys(bk).forEach(function(b){ var c=grid[k+"||"+b]; if(c) s+=finalize(m0,c); }); return s; }
@@ -332,7 +417,7 @@
   function renderChartInto(host,res,type){ clear(host); if(type==="kpi") renderKPI(host,res); else if(type==="line") renderLine(host,res); else if(type==="bar") renderBar(host,res); else if(type==="scatter") renderScatter(host,res); else renderTable(host,res); }
 
   // ---- pipeline: gather sources -> aggregate -> choose -> render ---------
-  function neededSources(){ var set={}; S.measures.forEach(function(id){ set[MBYID[id].source]=1; }); return Object.keys(set); }
+  function neededSources(){ var set={}; S.measures.forEach(function(id){ var m=MBYID[id]; set[m.source==="status"?("status:"+m.diag):m.source]=1; }); return Object.keys(set); }
   function ensureProgress(host){ if(!host.querySelector(".progress")){ var p=ce("div","progress"); p.appendChild(ce("i")); host.insertBefore(p,host.firstChild); } return host.querySelector(".progress"); }
   function showProgress(on){ var host=$("chartHost"); var p=host.querySelector(".progress"); if(p) p.classList.toggle("on",!!on); }
   function emptyState(ic,big,sub,isErr){ var d=ce("div","empty"+(isErr?" err":"")); d.appendChild(ce("div","ic",ic)); d.appendChild(ce("div","big",big)); d.appendChild(ce("div",null,sub)); return d; }
@@ -399,11 +484,17 @@
   }
   function renderCatalog(){
     var host=$("catScroll"); clear(host); var q=($("catSearch").value||"").toLowerCase().trim();
-    var cats={}; var order=[];
+    var cats={}; var order=[]; var extras=0;
     function push(cn,node){ if(!cats[cn]){ cats[cn]=[]; order.push(cn); } cats[cn].push(node); }
-    MEASURES.forEach(function(m){ if(q && m.label.toLowerCase().indexOf(q)<0 && m.cat.toLowerCase().indexOf(q)<0) return; push(m.cat, catItem(m,"measure",S.measures.indexOf(m.id)>=0)); });
+    MEASURES.forEach(function(m){
+      if(q && m.label.toLowerCase().indexOf(q)<0 && m.cat.toLowerCase().indexOf(q)<0) return;
+      if(S.live && S.dynLoaded){ if(m.source==="exception" && m.match && !m.ruleId) return; } else { if(m.dynamic) return; }
+      if(m.cat==="All reported diagnostics"){ extras++; if(!S.showAllDiag && !q) return; }
+      push(m.cat, catItem(m,"measure",S.measures.indexOf(m.id)>=0));
+    });
     DIMENSIONS.forEach(function(d){ if(q && d.label.toLowerCase().indexOf(q)<0 && "break down by".indexOf(q)<0) return; push("Break down by", catItem(d,"dimension",S.dims.indexOf(d.id)>=0)); });
     order.forEach(function(cn){ var g=ce("div","cat-group"); g.appendChild(ce("h3",null,cn)); cats[cn].forEach(function(n){ g.appendChild(n); }); host.appendChild(g); });
+    if(extras>0 && !q){ var t=ce("button","btn ghost"); t.style.cssText="margin:8px;font-size:12px;"; t.textContent=S.showAllDiag? "Hide extra diagnostics" : ("Show all "+extras+" reported diagnostics (incl. custom)"); t.onclick=function(){ S.showAllDiag=!S.showAllDiag; renderCatalog(); }; host.appendChild(t); }
     if(order.length===0){ var e=ce("div"); e.style.cssText="padding:18px 8px;color:var(--faint);font-size:12px;text-align:center;"; e.textContent="No data points match \u201C"+q+"\u201D."; host.appendChild(e); }
   }
   function wireDropzones(){
@@ -547,6 +638,45 @@
     if(S.live && matchedCount===0) log("no rules matched safety measures by name \u2014 safety event metrics will read 0. Check rule names in this database.","err");
   }
 
+  // ---- runtime discovery: surface every rule + diagnostic this fleet has --
+  function guessVtype(name){ var n=(name||"").toLowerCase();
+    if(/voltage|volts?\b/.test(n)) return "volts";
+    if(/temperature|temp\b/.test(n)) return "tempC";
+    if(/pressure/.test(n)) return "pressurePa";
+    if(/\brpm\b|engine speed/.test(n)) return "rpm";
+    if(/odometer|distance/.test(n)) return "distM";
+    if(/road speed|\bspeed\b/.test(n)) return "speedKph";
+    if(/hours\b/.test(n)) return "hoursSec";
+    if(/percent|state of charge|level \(perc/.test(n)) return "pct";
+    if(/fuel|volume|litre|liter|gallon/.test(n)) return "volumeL";
+    return "num";
+  }
+  function guessAgg(name){ var n=(name||"").toLowerCase();
+    if(/odometer|engine hours|\bhours\b|\btotal\b|counts?\b|distance|fuel used/.test(n)) return "last";
+    return "avg";
+  }
+  function discoverCatalog(){
+    if(!S.live || S.dynLoaded) return Promise.resolve();
+    setMode("live","Discovering data points\u2026");
+    try{ (S.meta.rules||[]).forEach(function(rl){ if(!rl||!rl.id) return; var mid="rule_"+rl.id; if(MBYID[mid]) return; var m={ id:mid, label:(rl.name||rl.id), cat:"Rules & exceptions", source:"exception", agg:"count", unit:"events", vtype:"int", ruleId:rl.id, dynamic:true }; MEASURES.push(m); MBYID[mid]=m; }); }catch(e){ log("rule discovery: "+errMsg(e),"err"); }
+    var now=new Date(); var from=new Date(now.getTime()-3*24*3600*1000);
+    var ids=S.meta.devices.map(function(d){return d.id;}).slice(0,12);
+    if(!ids.length){ finishDiscover(); return Promise.resolve(); }
+    var sdCalls=ids.map(function(id){ return ["Get",{ typeName:"StatusData", search:{ fromDate:from.toISOString(), toDate:now.toISOString(), deviceSearch:{id:id} }, resultsLimit:3000 }]; });
+    var curated={}; MEASURES.forEach(function(m){ if(m.source==="status"&&m.diag) curated[m.diag]=1; });
+    return gmulti(sdCalls).then(function(res){
+      var seen={}; res.forEach(function(a){ if(a&&a.length) a.forEach(function(r){ var d=r.diagnostic&&r.diagnostic.id; if(d && !seen[d]) seen[d]={id:d,val:r.data}; }); });
+      var newIds=Object.keys(seen).filter(function(d){ return !curated[d] && !MBYID["diag_"+d]; }).slice(0,250);
+      if(!newIds.length) return;
+      var dCalls=newIds.map(function(d){ return ["Get",{ typeName:"Diagnostic", search:{ id:d } }]; });
+      return gmulti(dCalls).then(function(dres){
+        var names={}; dres.forEach(function(a){ if(a&&a[0]) names[a[0].id]=a[0].name; });
+        newIds.forEach(function(d){ var nm=names[d]||d; var mid="diag_"+d; if(MBYID[mid]) return; var m={ id:mid, label:nm, cat:"All reported diagnostics", source:"status", diag:d, agg:guessAgg(nm), unit:"", vtype:guessVtype(nm), dynamic:true }; MEASURES.push(m); MBYID[mid]=m; });
+      });
+    }).then(finishDiscover).catch(function(e){ log("diagnostic discovery: "+errMsg(e),"err"); finishDiscover(); });
+  }
+  function finishDiscover(){ S.dynLoaded=true; var extra=0,rules=0; MEASURES.forEach(function(m){ if(m.dynamic){ if(m.source==="status")extra++; else rules++; } }); log("discovery: "+rules+" rules and "+extra+" additional diagnostics found (incl. any custom)","ok"); renderCatalog(); setMode("live","Connected"); }
+
   // ---- demo data --------------------------------------------------------
   function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
   function hashStr(s){ var h=2166136261; for(var i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
@@ -561,8 +691,30 @@
     var devices=[]; for(var v=1;v<=14;v++){ var rg=regionIds[v%3]; devices.push({ id:"dev_"+v, name:"Truck "+(v<10?"0":"")+v, groups:[{id:"GroupCompanyId"},{id:rg}], __driver:"driver_"+(v%6) }); }
     return { groups:groups, rules:rules, drivers:drivers, devices:devices };
   }
+  function mockDiagValue(diag,rnd,di,n){
+    function around(x,p){ return x*(1-p+rnd()*2*p); }
+    var f=di/Math.max(1,n);
+    if(/Voltage/i.test(diag)) return around(12.4,0.12);
+    if(/CoolantTemperature/i.test(diag)) return around(85,0.15);
+    if(/OutsideTemperature/i.test(diag)) return around(18,0.5);
+    if(/EngineSpeed/i.test(diag)) return around(1500,0.4);
+    if(/RoadSpeed/i.test(diag)) return around(60,0.6);
+    if(/FuelLevelId/i.test(diag)) return around(55,0.5);
+    if(/FuelUnits/i.test(diag)) return around(60,0.35);
+    if(/TirePressure/i.test(diag)) return around(275000,0.06);
+    if(/PredictedRiskOfBreakdown/i.test(diag)) return Math.max(0,around(12,1));
+    if(/ElectricalSystemRating/i.test(diag)) return around(80,0.12);
+    if(/Acceleration/i.test(diag)) return (rnd()-0.5)*6;
+    if(/Odometer/i.test(diag)) return 35000000 + f*1500000 + rnd()*3000;
+    if(/EngineHours/i.test(diag)) return 3200000 + f*80000;
+    if(/TotalFuelUsed|DeviceTotalFuel/i.test(diag)) return 4000 + f*600 + rnd()*4;
+    if(/IdleFuel/i.test(diag)) return 70 + f*20;
+    return around(50,0.4);
+  }
   function mockRows(source,r,ids){
     var out=[]; var days=eachDay(r.from,r.to); var devs=ids.length?ids:S.meta.devices.map(function(d){return d.id;});
+    if(source.indexOf("status:")===0){ var diag=source.slice(7); devs.forEach(function(id){ var rnd=mulberry32(hashStr(id+diag)); days.forEach(function(dayKey,di){ var dt=new Date(dayKey+"T09:00:00"); var n=3+Math.floor(rnd()*4); for(var i=0;i<n;i++){ var when=new Date(dt.getTime()+i*2*3600*1000); out.push({ device:{id:id}, dateTime:when.toISOString(), data:mockDiagValue(diag,rnd,di,days.length) }); } }); }); return out; }
+    if(source==="fault"){ devs.forEach(function(id){ var rnd=mulberry32(hashStr(id+"flt")); days.forEach(function(dayKey){ if(rnd()<0.07){ var dt=new Date(dayKey+"T12:00:00"); var isBatt=rnd()<0.5; out.push({ device:{id:id}, dateTime:dt.toISOString(), diagnostic:{id:isBatt?"DiagnosticVehicleBatteryLowVoltageId":"DiagnosticAccidentLevelAccelerationEventId"}, malfunctionLamp:rnd()<0.3, count:1 }); } }); }); return out; }
     devs.forEach(function(id){
       var seed=hashStr(id), rnd=mulberry32(seed); var dev=S.meta.deviceById[id]||{}; var driverId=dev.__driver||("driver_"+(seed%6));
       var risk=0.5+rnd()*1.6, activity=0.6+rnd()*1.3, avgSpeedBase=40+rnd()*22;
@@ -650,7 +802,7 @@
     S.api=api; S.live=live;
     renderStrip(); wireDropzones(); wireControls(); renderCatalog(); updateTabs(); injectDiscoverButton();
     setMode(live?"live":"demo", live?"Connecting\u2026":"Demo data");
-    loadMetadata().then(function(){ S.ready=true; recompute(); });
+    loadMetadata().then(function(){ S.ready=true; recompute(); discoverCatalog(); });
   }
   if (typeof geotab!=="undefined" && geotab.addin){
     geotab.addin.insightBuilder=function(){ return { initialize:function(api,state,cb){ boot(api,true); if(cb) cb(); }, focus:function(){}, blur:function(){} }; };
